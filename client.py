@@ -2,7 +2,8 @@ import pygame
 pygame.init()
 
 from network import Network
-from pygame_textinput import TextInput
+from pygame_input import TextInput
+from pygame_input import ButtonRect
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
@@ -34,8 +35,24 @@ def on_login(_):
     network.send()
 
 
+def on_button_press(btn:ButtonRect):
+    print(btn.value)
+def on_button_hover(btn:ButtonRect):
+    btn.display_dy = -10
+    btn.display_dheight = 10
+def on_not_button_hover(btn:ButtonRect):
+    btn.display_dy = 0
+    btn.display_dheight = 0
+test_button = ButtonRect(700, 400, 50, 50, 2, outline_width=3, outline_color=(255, 0, 0))
+test_button.set_on_click(on_button_press)
+test_button.set_label("Hello world", pygame.font.Font(None, 30), (0, 255, 0))
+test_button.value = "Hello World!"
+test_button.set_hover(on_button_hover, on_not_button_hover)
+
+
 
 text_inputs = [username_input, password_input]
+buttons = [test_button]
 
 run = True
 dt = 0
@@ -51,11 +68,16 @@ while run:
     
     for text_input in text_inputs:
         text_input.handle_events(events, dt)
+    for button in buttons:
+        button.handle_events(events, dt)
+    
 
     
     screen.fill((30, 30, 30))
     for text_input in text_inputs:
         text_input.draw(screen)
+    for button in buttons:
+        button.draw(screen)
 
     pygame.display.flip()
 

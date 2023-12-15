@@ -54,12 +54,12 @@ class TextInput:
         self._activate_mouse_button = None
         self._activate_key = None
 
-        self.submit_action = None
-        self.submit_do_default = True
-        self.on_active_action = None
-        self.on_inactive_action = None
-        self.on_hover_action = None
-        self.on_not_hover_action = None
+        self._submit_action = None
+        self._submit_do_default = True
+        self._on_active_action = None
+        self._on_inactive_action = None
+        self._on_hover_action = None
+        self._on_not_hover_action = None
         self._hovering = False
 
         self._pressing_down = None
@@ -90,13 +90,13 @@ class TextInput:
             if event.type == pygame.MOUSEMOTION:
                 if self.rect.collidepoint(event.pos):
                     self.background_color = self.hover_background_color
-                    if self.on_hover_action and not self._hovering:
-                        self.on_hover_action(self)
+                    if self._on_hover_action and not self._hovering:
+                        self._on_hover_action(self)
                     self._hovering = True
                 else:
                     self.background_color = self.active_background_color if self.active else self.inactive_background_color
-                    if self.on_not_hover_action and self._hovering:
-                        self.on_not_hover_action(self)
+                    if self._on_not_hover_action and self._hovering:
+                        self._on_not_hover_action(self)
                     self._hovering = False
             # Clicked handling
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -245,7 +245,7 @@ class TextInput:
         func
             Function to be called, take in 1 argument: self
         '''
-        self.on_hover_action = func
+        self._on_hover_action = func
 
     def set_on_not_hover(self, func):
         '''Set action when the text box is hovered off
@@ -255,7 +255,7 @@ class TextInput:
         func
             Function to be called, take in 1 argument: self
         '''
-        self.on_not_hover_action = func
+        self._on_not_hover_action = func
 
     def set_mouse_button(self, button: int):
         '''Set clicked mouse button on the text box to activate, or else any mouse button can activate it
@@ -276,15 +276,15 @@ class TextInput:
     def activate(self):
         '''Set text box to active'''
         self.background_color = self.active_background_color
-        if self.on_active_action and not self.active:
-            self.on_active_action(self)
+        if self._on_active_action and not self.active:
+            self._on_active_action(self)
         self.active = True
 
     def deactivate(self):
         '''Set text box to inactive'''
         self.background_color = self.inactive_background_color
-        if self.on_inactive_action and self.active:
-            self.on_inactive_action(self)
+        if self._on_inactive_action and self.active:
+            self._on_inactive_action(self)
         self.active = False
 
     def set_on_active(self, func):
@@ -295,7 +295,7 @@ class TextInput:
         func
             Function to be called, take in 1 argument: self
         '''
-        self.on_active_action = func
+        self._on_active_action = func
 
     def set_on_inactive(self, func):
         '''Set action when the text box is set from active to not active
@@ -305,7 +305,7 @@ class TextInput:
         func
             Function to be called, take in 1 argument: self
         '''
-        self.on_active_action = func
+        self._on_active_action = func
 
     def set_on_submit(self, func, do_default: bool = True):
         '''Set action when return is pressed
@@ -318,24 +318,24 @@ class TextInput:
             Whether to clear text and set inactive or not
             If you wish to clear text on your own, be sure to call the clear_text method
         '''
-        self.submit_action = func
-        self.submit_do_default = do_default
+        self._submit_action = func
+        self._submit_do_default = do_default
 
     def clear_text(self):
         self.text = ""
         self.pointer = 0
 
     def on_submit(self):
-        if self.submit_action:
-            self.submit_action(self)
-        if not self.submit_do_default:
+        if self._submit_action:
+            self._submit_action(self)
+        if not self._submit_do_default:
             return
 
         self.pointer = 0
         self.text = ""
         self.background_color = self.inactive_background_color
-        if self.on_inactive_action:
-            self.on_inactive_action(self)
+        if self._on_inactive_action:
+            self._on_inactive_action(self)
         self.active = False
 
     def draw(self, screen: pygame.Surface):
@@ -351,10 +351,10 @@ class TextInput:
         pygame.draw.rect(
             screen,
             self.outline_color,
-            (self.rect.x - self.outline_width,
-             self.rect.y - self.outline_width,
-             self.rect.width + self.outline_width * 2,
-             self.rect.height + self.outline_width * 2),
+            (self.x - self.outline_width,
+             self.y - self.outline_width,
+             self.width + self.outline_width * 2,
+             self.height + self.outline_width * 2),
             self.outline_width,
             border_radius=self.border_radius,
             border_top_left_radius=self.border_top_left_radius,
@@ -362,13 +362,13 @@ class TextInput:
             border_bottom_left_radius=self.border_bottom_left_radius,
             border_bottom_right_radius=self.border_bottom_right_radius)
         display_surface = pygame.Surface(
-            (self.rect.width - self.padding * 2,
-             self.rect.height - self.padding * 2))
+            (self.width - self.padding * 2,
+             self.height - self.padding * 2))
         display_surface.fill(self.background_color)
         display_surface.blit(self.text_surface, (-self._position_shift, 0))
         screen.blit(
             display_surface,
-            (self.rect.x +
+            (self.x +
              self.padding,
-             self.rect.y +
+             self.y +
              self.padding))
