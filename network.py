@@ -8,10 +8,8 @@ import json
 class Network:
     def __init__(self, uri:str) -> None:
         self.uri = uri
-        self.websocket:websockets.WebSocketClientProtocol|None = None
+        self.websocket:websockets.WebSocketClientProtocol = websockets.connect(self.uri)
     
-    async def connect(self):
-        self.websocket = websockets.connect(self.uri)
     
     async def send(self, data):
         await self.websocket.send(data)
