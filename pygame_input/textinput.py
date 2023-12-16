@@ -146,7 +146,7 @@ class TextInput:
                         self.pressing_down_time = 0
 
         # Key hold down actions
-        if self._pressing_down_time > 0.5:
+        if self._pressing_down_time > 0.5 and self._pressing_down:
             if self._pressing_down.key == pygame.K_BACKSPACE:
                 if self.pointer > 0:
                     self.text = self.text[0:self.pointer -
@@ -162,6 +162,8 @@ class TextInput:
                 self.text += self._pressing_down.unicode
                 self.pointer += 1
             self._pressing_down_time -= 0.05
+            self._pointer_animation_clock = 0
+            self._pointer_animation_showing = True
 
         if self._pressing_down:
             self._pressing_down_time += dt
@@ -181,17 +183,26 @@ class TextInput:
             else:
                 pointer_surface.fill(self.background_color)
 
-            if pointer_loc - self._position_shift + \
-                    pointer_surface.get_width() > self.width - self.padding * 2:
+            pointer_display_pos_right = pointer_loc - \
+                self._position_shift + pointer_surface.get_width()
+            text_display_width = self.width - self.padding * 2      # (*****)|
+            pointer_is_right_of_display = pointer_display_pos_right > text_display_width        # |(*****)
+            pointer_is_left_of_display = pointer_loc < self._position_shift and text_width_right_of_pointer > self.width
+            text_width_is_shorter_than_display = pointer_display_pos_right + \
+                text_width_right_of_pointer < text_display_width  # *(****|)
+
+            if pointer_is_right_of_display:
                 self._position_shift = pointer_loc + pointer_surface.get_width() - self.width + \
                     self.padding * 2
 
-            elif pointer_loc < self._position_shift and text_width_right_of_pointer > self.width:
+            elif pointer_is_left_of_display:
                 self._position_shift = pointer_loc
 
-            elif pointer_loc - self._position_shift + text_width_right_of_pointer < self.width - self.padding * 2 - pointer_surface.get_width():
-                self._position_shift = 0 if pointer_loc + pointer_surface.get_width() - self.width + \
-                    self.padding * 2 < 0 else pointer_loc + pointer_surface.get_width() - self.width + self.padding * 2
+            elif text_width_is_shorter_than_display:
+                pointer_abs_pos_right = pointer_loc + pointer_surface.get_width()
+                new_pos_shift = pointer_abs_pos_right + \
+                    text_width_right_of_pointer - text_display_width
+                self._position_shift = 0 if new_pos_shift < 0 else new_pos_shift
 
             self.text_surface = pygame.Surface(
                 (text_render.get_width() +
@@ -341,8 +352,11 @@ class TextInput:
     def draw(self, screen: pygame.Surface):
         pygame.draw.rect(
             screen,
-            self.background_color,
-            self.rect,
+            self.outline_color,
+            (self.x - self.outline_width,
+             self.y - self.outline_width,
+             self.width + self.outline_width * 2,
+             self.height + self.outline_width * 2),
             border_radius=self.border_radius,
             border_top_left_radius=self.border_top_left_radius,
             border_top_right_radius=self.border_top_right_radius,
@@ -350,12 +364,8 @@ class TextInput:
             border_bottom_right_radius=self.border_bottom_right_radius)
         pygame.draw.rect(
             screen,
-            self.outline_color,
-            (self.x - self.outline_width,
-             self.y - self.outline_width,
-             self.width + self.outline_width * 2,
-             self.height + self.outline_width * 2),
-            self.outline_width,
+            self.background_color,
+            self.rect,
             border_radius=self.border_radius,
             border_top_left_radius=self.border_top_left_radius,
             border_top_right_radius=self.border_top_right_radius,

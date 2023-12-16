@@ -2,8 +2,7 @@ import pygame
 pygame.init()
 
 from network import Network
-from pygame_input import TextInput
-from pygame_input import ButtonRect
+from pygame_input import ButtonRect, ButtonCircle, TextInput, RadioInput, RadioSelection, ToggleButtonRect, ToggleButtonCircle
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
@@ -49,10 +48,19 @@ test_button.set_label("Hello world", pygame.font.Font(None, 30), (0, 255, 0))
 test_button.value = "Hello World!"
 test_button.set_hover(on_button_hover, on_not_button_hover)
 
+circle_button = ButtonCircle(800, 500, 30)
+circle_button.outline_width = 5
+circle_button.outline_color = (255,0,0)
+circle_button.set_on_click(lambda x:print("bruh"))
+
+test_radio = RadioInput(700, 100, 200, 200, "hello", ["Hello"])
+test_radio.set_all_text_color((255,255,255))
+
 
 
 text_inputs = [username_input, password_input]
-buttons = [test_button]
+buttons = [test_button, circle_button]
+radios = [test_radio]
 
 run = True
 dt = 0
@@ -62,15 +70,15 @@ while run:
         if event.type == pygame.QUIT:
             run = False
             break
-        
-        
+                
     
     
     for text_input in text_inputs:
         text_input.handle_events(events, dt)
     for button in buttons:
         button.handle_events(events, dt)
-    
+    for radio in radios:
+        radio.handle_events(events, dt)
 
     
     screen.fill((30, 30, 30))
@@ -78,6 +86,8 @@ while run:
         text_input.draw(screen)
     for button in buttons:
         button.draw(screen)
+    for radio in radios:
+        radio.draw(screen)
 
     pygame.display.flip()
 

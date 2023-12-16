@@ -4,11 +4,11 @@ import pygame
 class ButtonRect:
     def __init__(
             self,
-            x: int | float,
-            y: int | float,
-            width: int | float,
-            height: int | float,
-            border_radius: int | float = 0,
+            x: int,
+            y: int,
+            width: int,
+            height: int,
+            border_radius: int = 0,
             color: tuple = (
                 255,
                 255,
@@ -37,9 +37,6 @@ class ButtonRect:
         self.border_bottom_left_radius = border_radius
         self.border_bottom_right_radius = border_radius
         self.color = color
-        self.clicked_color = color
-        self.inactive_color = color
-        self.hover_color = color
         self.padding = padding
         self.outline_color = outline_color
         self.outline_width = outline_width
@@ -50,6 +47,8 @@ class ButtonRect:
 
         self.value = value
         self.active = active
+        self._on_active_action = None
+        self._on_inactive_action = None
 
         self._on_hover_action = None
         self._on_not_hover_action = None
@@ -64,10 +63,21 @@ class ButtonRect:
 
     @property
     def rect(self): return pygame.Rect(self.x, self.y, self.width, self.height)
+
     @property
-    def display_rect(self): return pygame.Rect(self.x+self.display_dx, self.y+self.display_dy, self.width+self.display_dwidth, self.height+self.display_dheight)
+    def display_rect(self): return pygame.Rect(
+        self.x + self.display_dx,
+        self.y + self.display_dy,
+        self.width + self.display_dwidth,
+        self.height + self.display_dheight)
+    
+    @display_rect.setter
+    def display_rect(self, x, y, width, height):
+        self.display_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+
     @property
-    def _curr_color(self): return 
+    def _curr_color(self): return
+
     def set_advanced_border_radius(
             self,
             border_top_left_radius: int,
@@ -88,6 +98,25 @@ class ButtonRect:
         self.label_font = font
         self.label_color = color
     
+    def set_activate_action(self, on_active, on_inactive):
+        self._on_active_action = on_active
+        self._on_inactive_action = on_inactive
+    
+    def set_on_active_action(self, func):
+        self._on_active_action = func
+    def set_on_inactive_action(self, func):
+        self._on_inactive_action = func
+    
+    def activate(self):
+        if not self.active and self._on_active_action:
+            self._on_active_action()
+        self.active = True
+    
+    def deactivate(self):
+        if self.active and self._on_inactive_action:
+            self._on_inactive_action()
+        self.active = False
+
     def set_hover(self, on_hover, on_not_hover):
         '''Fast set action when the button is hovered on and off
 
@@ -163,13 +192,25 @@ class ButtonRect:
                     self._hovering = False
             # Click handling
             if self.active:
-                if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
                     if self._activate_mouse_button and event.button != self._activate_mouse_button:
                         continue
                     if self._on_click_action:
                         self._on_click_action(self)
 
     def draw(self, screen: pygame.Surface):
+        pygame.draw.rect(
+            screen,
+            self.outline_color,
+            (self.display_rect.x - self.outline_width,
+             self.display_rect.y - self.outline_width,
+             self.display_rect.width + self.outline_width * 2,
+             self.display_rect.height + self.outline_width * 2),
+            border_radius=self.border_radius,
+            border_top_left_radius=self.border_top_left_radius,
+            border_top_right_radius=self.border_top_right_radius,
+            border_bottom_left_radius=self.border_bottom_left_radius,
+            border_bottom_right_radius=self.border_bottom_right_radius)
         pygame.draw.rect(
             screen,
             self.color,
@@ -180,19 +221,7 @@ class ButtonRect:
             self.border_top_right_radius,
             self.border_bottom_left_radius,
             self.border_bottom_right_radius)
-        pygame.draw.rect(
-            screen,
-            self.outline_color,
-            (self.display_rect.x - self.outline_width,
-             self.display_rect.y - self.outline_width,
-             self.display_rect.width + self.outline_width * 2,
-             self.display_rect.height + self.outline_width * 2),
-            self.outline_width,
-            border_radius=self.border_radius,
-            border_top_left_radius=self.border_top_left_radius,
-            border_top_right_radius=self.border_top_right_radius,
-            border_bottom_left_radius=self.border_bottom_left_radius,
-            border_bottom_right_radius=self.border_bottom_right_radius)
+        
         if self.label_font:
             label_surface = self.label_font.render(
                 self.label_text, True, self.label_color)
@@ -200,3 +229,37 @@ class ButtonRect:
                 label_surface,
                 (self.display_rect.x + self.padding,
                  self.display_rect.y + self.padding))
+    
+    
+
+
+class ButtonCircle(ButtonRect):
+    def __init__(
+            self,
+            x: int,
+            y: int,
+            radius: int,
+            color: tuple = (
+                255,
+                255,
+                255),
+            padding: int = 0,
+            outline_color: tuple = (
+                0,
+                0,
+                0),
+        outline_width: int = 1,
+        value=None,
+            active: bool = True) -> None:
+        super().__init__(
+            x,
+            y,
+            radius * 2,
+            radius * 2,
+            radius,
+            color,
+            padding,
+            outline_color,
+            outline_width,
+            value,
+            active)
