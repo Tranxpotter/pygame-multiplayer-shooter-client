@@ -11,14 +11,15 @@ class TextInput:
     '''
 
     def __init__(self,
-                 x: int | float,
-                 y: int | float,
-                 width: int | float,
-                 height: int | float,
+                 x: int,
+                 y: int,
+                 width: int,
+                 height: int,
                  border_radius: int = 0,
                  text: str = "",
                  placeholder: str = "",
                  font: pygame.font.Font = pygame.font.Font(None, 10),
+                 background_image: pygame.Surface | None = None,
                  background_color: tuple = (255, 255, 255),
                  outline_color: tuple = (0, 0, 0),
                  outline_width: int = 0,
@@ -39,6 +40,8 @@ class TextInput:
         self._position_shift = 0
         self.placeholder = placeholder
         self.font = font
+        self.background_image = pygame.transform.scale(
+            background_image, (width, height)) if background_image else None
         self.background_color = background_color
         self.active_background_color = background_color
         self.inactive_background_color = background_color
@@ -186,7 +189,8 @@ class TextInput:
             pointer_display_pos_right = pointer_loc - \
                 self._position_shift + pointer_surface.get_width()
             text_display_width = self.width - self.padding * 2      # (*****)|
-            pointer_is_right_of_display = pointer_display_pos_right > text_display_width        # |(*****)
+            # |(*****)
+            pointer_is_right_of_display = pointer_display_pos_right > text_display_width
             pointer_is_left_of_display = pointer_loc < self._position_shift and text_width_right_of_pointer > self.width
             text_width_is_shorter_than_display = pointer_display_pos_right + \
                 text_width_right_of_pointer < text_display_width  # *(****|)
@@ -238,6 +242,10 @@ class TextInput:
         self.border_top_right_radius = border_top_right_radius
         self.border_bottom_left_radius = border_bottom_left_radius
         self.border_bottom_right_radius = border_bottom_right_radius
+
+    def set_background_image(self, image: pygame.Surface):
+        self.background_image = pygame.transform.scale(
+            image, (self.width, self.height))
 
     def set_active_background_color(self, color: tuple):
         self.active_background_color = color
@@ -362,19 +370,26 @@ class TextInput:
             border_top_right_radius=self.border_top_right_radius,
             border_bottom_left_radius=self.border_bottom_left_radius,
             border_bottom_right_radius=self.border_bottom_right_radius)
-        pygame.draw.rect(
-            screen,
-            self.background_color,
-            self.rect,
-            border_radius=self.border_radius,
-            border_top_left_radius=self.border_top_left_radius,
-            border_top_right_radius=self.border_top_right_radius,
-            border_bottom_left_radius=self.border_bottom_left_radius,
-            border_bottom_right_radius=self.border_bottom_right_radius)
-        display_surface = pygame.Surface(
-            (self.width - self.padding * 2,
-             self.height - self.padding * 2))
-        display_surface.fill(self.background_color)
+        if self.background_image:
+            screen.blit(self.background_image, (self.x, self.y))
+            display_surface = pygame.Surface(
+                (self.width - self.padding * 2,
+                 self.height - self.padding * 2), pygame.SRCALPHA, 32)
+            display_surface = display_surface.convert_alpha()
+        else:
+            pygame.draw.rect(
+                screen,
+                self.background_color,
+                self.rect,
+                border_radius=self.border_radius,
+                border_top_left_radius=self.border_top_left_radius,
+                border_top_right_radius=self.border_top_right_radius,
+                border_bottom_left_radius=self.border_bottom_left_radius,
+                border_bottom_right_radius=self.border_bottom_right_radius)
+            display_surface = pygame.Surface(
+                (self.width - self.padding * 2,
+                 self.height - self.padding * 2))
+            display_surface.fill(self.background_color)
         display_surface.blit(self.text_surface, (-self._position_shift, 0))
         screen.blit(
             display_surface,
