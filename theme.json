@@ -9,8 +9,9 @@
         },
         "font":
         {
-            "name": "montserrat",
-            "size": "12",
+            "regular_path": "fonts/ARIAL.TTF",
+            "name": "ARIAL",
+            "size": "15",
             "bold": "0",
             "italic": "0"
         },
@@ -19,6 +20,16 @@
             "text_shadow": "1",
             "text_shadow_size": "1",
             "text_shadow_offset": "0,0"
+        }
+    }, 
+    "@title":{
+        "font":{
+            "size":"50"
+        }
+    }, 
+    "@error_display":{
+        "colours":{
+            "normal_text":"rgb(255,0,0)"
         }
     }
 }

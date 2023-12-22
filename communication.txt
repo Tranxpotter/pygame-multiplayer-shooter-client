@@ -1,0 +1,10 @@
+Login Flow-
+1. Client: {mode:login/signup, username:str, password:str}
+2. Server: {failed:bool, id:str, *error_message:str}
+
+Reconnect Flow-
+1. Client: {mode:reconnect, prev_id:str}
+2. Server: {failed:bool, id:str, *error_message:str}
+
+Menu Screen Flow-
+1. Client: {}
