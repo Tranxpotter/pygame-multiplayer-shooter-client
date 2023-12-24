@@ -1,3 +1,7 @@
+import json
+import os
+import asyncio
+
 import pygame
 import pygame_gui
 from pygame_gui.core import ObjectID
@@ -13,6 +17,7 @@ clock = pygame.time.Clock()
 
 network = Network("ws://localhost:8765")
 network.start_connection()
+
 
 manager = pygame_gui.UIManager((SCREEN_WIDTH, SCREEN_HEIGHT), "theme.json")
 manager.set_visual_debug_mode(True)
@@ -56,7 +61,8 @@ submit_button = pygame_gui.elements.UIButton(relative_rect=pygame.Rect(180, 50, 
                                              anchors=ANCHOR_CENTER)
 
 
-def on_signin():
+async def on_signin():
+    print(1)
     if not username_input.text:
         error_display.visible = 1
         error_display.set_text("username is required")
@@ -68,57 +74,90 @@ def on_signin():
     
     
     
-
-
-
-run = True
-dt = 0
-while run:
-    events = pygame.event.get()
-    for event in events:
-        if event.type == pygame.QUIT:
-            run = False
-            break
-
-        elif event.type == pygame_gui.UI_TEXT_ENTRY_FINISHED:
-            if event.ui_object_id == "#username_input":
-                username_input.unfocus()
-                password_input.focus()
-            elif event.ui_object_id == "#password_input":
-                password_input.unfocus()
-                on_signin()
-        
-        elif event.type == pygame_gui.UI_BUTTON_PRESSED:
-            if event.ui_object_id == "#signin_options":
-                if signin_options.text == "login":
-                    signin_options.set_text("signup")
-                else:
-                    signin_options.set_text("login")
-            elif event.ui_object_id == "#submit_button":
-                on_signin()
-            
-
-        manager.process_events(event)
+    signin_info = {"mode":signin_options.text, 
+                   "username":username_input.text, 
+                   "password":password_input.text}
     
-    if not network.connected:
+    password_input.clear()
+    
+    try:
+        await network.send(json.dumps(signin_info))
+    except:
+        return
+    
+    try:
+        result = await network.recv()
+    except asyncio.TimeoutError as e:
+        error_display.set_text("Connection Timeout")
+        return
+    except:
+        return
+    
+    print(f"{result=}")
+    result = json.loads(result)
+
+    if result["failed"]:
         error_display.visible = 1
-        error_display.set_text("Not connected to server")
+        error_display.set_text(result["error_message"])
+        return
+    
+    error_display.visible = 0
+    submit_button.disable()
+
+
+def on_connection_error():
+    error_display.visible = 1
+    error_display.set_text("Not connected to server")
+network.set_on_connection_error(on_connection_error)
+    
+    
+
+async def main():
+    run = True
+    dt = 0
+    while run:
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                await network.websocket.close()
+                run = False
+                break
+
+            elif event.type == pygame_gui.UI_TEXT_ENTRY_FINISHED:
+                if event.ui_object_id == "#username_input":
+                    username_input.unfocus()
+                    password_input.focus()
+                elif event.ui_object_id == "#password_input":
+                    password_input.unfocus()
+                    await on_signin()
+            
+            elif event.type == pygame_gui.UI_BUTTON_PRESSED:
+                if event.ui_object_id == "#signin_options":
+                    if signin_options.text == "login":
+                        signin_options.set_text("signup")
+                    else:
+                        signin_options.set_text("login")
+                elif event.ui_object_id == "#submit_button":
+                    await on_signin()
                 
-    manager.update(dt)
 
-    manager.draw_ui(screen)
-    pygame.display.flip()
+            manager.process_events(event)
+        
+                    
+        manager.update(dt)
 
+        manager.draw_ui(screen)
+        pygame.display.flip()
+
+        
+        dt = clock.tick(60)/1000
     
-    dt = clock.tick(60)/1000
-    
 
 
 
 
 
 
-
-
-
-pygame.quit()
+if __name__ == "__main__":
+    asyncio.run(main())
+    pygame.quit()

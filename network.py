@@ -8,50 +8,70 @@ class Network:
     def __init__(self, uri:str) -> None:
         self.uri = uri
         self.websocket:websockets.WebSocketClientProtocol|None = None
+        self.prev_id = None
         self.connected = False
+        self.on_connect = None
         self.on_connection_error = None
         self.on_error_do_default = True
         self.on_reconnect = None
-        loop = asyncio.new_event_loop()
-        self._loop = loop
-        self._network_conn_thread = Thread(target=loop.run_forever).start()
     
     def start_connection(self):
-        asyncio.run_coroutine_threadsafe(self.connect(), self._loop)
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(self.connect())
+
 
     def set_on_connection_error(self, func:Callable, do_default = True):
         self.on_connection_error = func
         self.on_error_do_default = do_default
 
     async def connect(self):
+        print("run")
         while not self.connected:
             try:
                 self.websocket = await websockets.connect(self.uri)
-                self.connected = True
             except ConnectionRefusedError:
                 self.connected = False
                 continue
+            
+            self.connected = True
+            if self.on_connect:
+                self.on_connect()
+        print("done")
+    
+    def set_on_connect(self, func:Callable):
+        self.on_connect = func
     
     def set_on_reconnect(self, func:Callable):
         self.on_reconnect = func
 
     def _on_connection_error(self):
-        self.on_connection_error()
+        self.connected = False
+        self.prev_id = self.websocket.id
+        if self.on_connection_error:
+            self.on_connection_error()
         if not self.on_error_do_default:
             return
         asyncio.run_coroutine_threadsafe(self.connect(), self._loop)
     
     async def send(self, data):
+        if not self.websocket:
+            return False
         try:
             await self.websocket.send(data)
-        except websockets.ConnectionClosedError:
+            return True
+        except websockets.ConnectionClosedError as e:
             self._on_connection_error()
+            raise e
     
     async def recv(self):
+        if not self.websocket:
+            return False
         try:
-            return await self.websocket.recv()
+            return await asyncio.wait_for(self.websocket.recv(), 5)
         except websockets.ConnectionClosedError:
             self._on_connection_error()
+            return False
+
         
 
 
